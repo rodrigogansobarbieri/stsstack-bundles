@@ -12,6 +12,7 @@ MODIFY_BUNDLE_CONSTRAINTS=true
 REMOTE_BUILD=
 SKIP_BUILD=false
 SLEEP=
+USE_JUJU29=false
 WAIT_ON_DESTROY=true
 
 . $(dirname $0)/func_test_tools/common.sh
@@ -58,6 +59,9 @@ OPTIONS:
         enough capacity to boot the vms required by the tests.
     --sleep TIME_SECS
         Specify amount of seconds to sleep between functest steps.
+    --use-juju29
+        Configure the framework to use juju 2.9 instead of 3.x (usually
+        to be able to test bionic-based code)
     --help
         This help message.
 EOF
@@ -96,6 +100,9 @@ while (($# > 0)); do
         --sleep)
             SLEEP=$2
             shift
+            ;;
+        --use-juju29)
+            USE_JUJU29=true
             ;;
         --help|-h)
             usage
@@ -154,8 +161,12 @@ export TEST_JUJU3=1
 # NOTE: this should not be necessary for > juju 2.x but since we still have a need for it we add it in
 export TEST_ZAZA_BUG_LP1987332=1
 
-# Some charms point to an upstream constraints file that installs python-libjuju 2.x so we need to do this to ensure we get 3.x
-export TEST_CONSTRAINTS_FILE=https://raw.githubusercontent.com/openstack-charmers/zaza/master/constraints-juju34.txt
+if $USE_JUJU29; then
+    export TEST_CONSTRAINTS_FILE=https://raw.githubusercontent.com/openstack-charmers/zaza/master/constraints-juju29.txt
+else
+    # Some charms point to an upstream constraints file that installs python-libjuju 2.x so we need to do this to ensure we get 3.x
+    export TEST_CONSTRAINTS_FILE=https://raw.githubusercontent.com/openstack-charmers/zaza/master/constraints-juju34.txt
+fi
 
 LOGFILE=$(mktemp --suffix=-charm-func-test-results)
 (

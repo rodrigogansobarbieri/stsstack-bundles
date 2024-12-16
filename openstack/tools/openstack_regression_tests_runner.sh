@@ -6,6 +6,7 @@ FUNC_TEST_PR=
 FUNC_TEST_TARGET=
 IMAGES_PATH=$HOME/tmp
 MODIFY_BUNDLE_CONSTRAINTS=true
+USE_JUJU29=false
 
 . $(dirname $0)/func_test_tools/common.sh
 
@@ -25,6 +26,9 @@ OPTIONS:
         By default we modify test bundle constraints to ensure that applications
         have the resources they need. For example nova-compute needs to have
         enough capacity to boot the vms required by the tests.
+    --use-juju29
+        Configure the framework to use juju 2.9 instead of 3.x (usually
+        to be able to test bionic-based code)
     --help
         This help message.
 EOF
@@ -45,6 +49,9 @@ while (($# > 0)); do
             ;;
         --skip-modify-bundle-constraints)
             MODIFY_BUNDLE_CONSTRAINTS=false
+            ;;
+        --use-juju29)
+            USE_JUJU29=true
             ;;
         --help|-h)
             usage
@@ -108,13 +115,18 @@ export {,TEST_}SWIFT_IP=10.140.56.22
 export TEST_MODEL_SETTINGS="image-stream=released;default-series=jammy;test-mode=true;transmit-vendor-metrics=false"
 # We need to set TEST_JUJU3 as well as the constraints file
 # Ref: https://github.com/openstack-charmers/zaza/blob/e96ab098f00951079fccb34bc38d4ae6ebb38606/setup.py#L47
-export TEST_JUJU3=1
 
 # NOTE: this should not be necessary for > juju 2.x but since we still have a need for it we add it in
 export TEST_ZAZA_BUG_LP1987332=1
 
-# Some charms point to an upstream constraints file that installs python-libjuju 2.x so we need to do this to ensure we get 3.x
-export TEST_CONSTRAINTS_FILE=https://raw.githubusercontent.com/openstack-charmers/zaza/master/constraints-juju34.txt
+if $USE_JUJU29; then
+    export TEST_CONSTRAINTS_FILE=https://raw.githubusercontent.com/openstack-charmers/zaza/master/constraints-juju29.txt
+    export TEST_JUJU3=0
+else
+    # Some charms point to an upstream constraints file that installs python-libjuju 2.x so we need to do this to ensure we get 3.x
+    export TEST_CONSTRAINTS_FILE=https://raw.githubusercontent.com/openstack-charmers/zaza/master/constraints-juju34.txt
+    export TEST_JUJU3=1
+fi
 
 # NOTE: this is the default applied in zaza-openstack-tests code but setting
 #       explicitly so we can use locally.
